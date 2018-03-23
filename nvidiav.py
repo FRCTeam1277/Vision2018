@@ -6,7 +6,7 @@ import time
 import dbus
 from networktables import NetworkTables
 
-time.sleep(20)
+#time.sleep(20)
 def check_point(event,x,y,flags,param):
 	if event == cv2.EVENT_LBUTTONDBLCLK:
 		pixel = hsv[y,x]
@@ -21,16 +21,16 @@ vid = cv2.VideoCapture(0)
 #vid.set(5,720)
 #vid.set(10,.05)
 
-#cv2.namedWindow('GaussianBlur')
-#cv2.setMouseCallback('GaussianBlur',check_point)
+cv2.namedWindow('GaussianBlur')
+cv2.setMouseCallback('GaussianBlur',check_point)
 logging.basicConfig(level=logging.DEBUG)
 minpixels=200
 minpixels_cube=800
 
 
-while not NetworkTables.isConnected():
-	print NetworkTables.initialize(server = '192.168.0.110')
-	time.sleep(1)
+#while not NetworkTables.isConnected():
+print NetworkTables.initialize(server = '192.168.0.110')
+time.sleep(1)
 statustable = NetworkTables.getTable("status")
 statustable.putBoolean('booted', True)
 vtargetobj = NetworkTables.getTable("vtargetobj")
@@ -45,10 +45,10 @@ while(True):
     gBlurImg = cv2.GaussianBlur(hsv, (9,9), 1.7) #gaussian blur for noise reduction
 
     #cv2.imshow('orig',hsv)
-    #cv2.imshow("GaussianBlur", gBlurImg)
+    cv2.imshow("GaussianBlur", gBlurImg)
 
-    lower_green = np.array([30,00,100])
-    upper_green = np.array([100,40,255])
+    lower_green = np.array([60,60,150])
+    upper_green = np.array([110,110,255])
 
     mask = cv2.inRange(gBlurImg, lower_green, upper_green)
     res = cv2.bitwise_and(frame,frame,mask=mask)
@@ -74,7 +74,7 @@ while(True):
 				cv2.rectangle(res, (x,y), (x+w, y+h), (0,0,255),2)
 		i=i+1
     
-    #cv2.imshow('fff',res)
+    cv2.imshow('fff',res)
     vtargetobj.putNumber('objcount', len(targetlistx))
     vtargetobj.putNumberArray('vtargetobjx',targetlistx)
     vtargetobj.putNumberArray('vtargetobjy',targetlisty)
@@ -83,15 +83,17 @@ while(True):
 
 # cube detection
 
-    lower_yellow = np.array([30,150,180])
-    upper_yellow = np.array([65,230,255])
+    lower_yellow = np.array([30,100,100])
+    upper_yellow = np.array([65,230,200])
 
     mask_yellow = cv2.inRange(gBlurImg, lower_yellow, upper_yellow)
     res_yellow = cv2.bitwise_and(frame,frame,mask=mask_yellow)
-
+    res_yellow = cv2.dilate(res_yellow, np.ones((9,9),np.uint8), iterations=1)
+    res_yellow = cv2.erode(res_yellow, np.ones((9,9),np.uint8), iterations=1)
     imgray_yellow = cv2.cvtColor(res_yellow, cv2.COLOR_BGR2GRAY)
     #cv2.imshow('gray',imgray_yellow)
     ret_yellow, thresh_yellow = cv2.threshold(imgray_yellow,127,255,0)
+
     contours_yellow, hierarchy_yellow = cv2.findContours(thresh_yellow, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cubelistx=[]
     cubelisty=[]
@@ -115,7 +117,7 @@ while(True):
 				cv2.rectangle(res_yellow, (x,y), (x+w, y+h), (0,0,255),2)
 		i=i+1
 
-    #cv2.imshow('cubes',res_yellow)
+    cv2.imshow('cubes',res_yellow)
     cubetarget.putNumber('objcount', len(cubelistx))
     cubetarget.putNumberArray('cubelistpixels',cubelistpixels)
     cubetarget.putNumberArray('cubetargetx',cubelistx)
